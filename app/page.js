@@ -1,28 +1,43 @@
-import supabase from "../lib/supabaseClient";
+"use client";
 
-export default async function Home() {
-  const { data: projects, error } = await supabase.from("projects").select("*");
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import supabase, { getUser } from "../lib/supabaseClient";
 
-  if (error) {
-    console.error("Error fetching projects:", error.message);
-    return <p>Error loading projects. Check console.</p>;
+
+export default function Home() {
+  const [user, setUser] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function fetchUser() {
+      const loggedInUser = await getUser();
+      if (!loggedInUser) {
+        router.push("/login"); // Redirect to login if not authenticated
+      } else {
+        setUser(loggedInUser);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  // Logout function
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
   }
 
   return (
     <main>
       <h1>RFI Tracker 📋</h1>
-      <h2>Projects</h2>
-      <ul>
-        {projects?.length > 0 ? (
-          projects.map((project) => (
-            <li key={project.id}>
-              <strong>{project.name}</strong>: {project.description}
-            </li>
-          ))
-        ) : (
-          <p>No projects found.</p>
-        )}
-      </ul>
+      {user ? (
+        <>
+          <p>Welcome, {user.email}!</p>
+          <button onClick={handleLogout}>Logout</button>
+        </>
+      ) : (
+        <p>Loading...</p>
+      )}
     </main>
   );
 }
