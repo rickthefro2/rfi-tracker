@@ -35,26 +35,28 @@ export default function Home() {
       return;
     }
     setProjects(projectsData);
-
+  
     // Fetch RFIs for each project
     const { data: rfisData, error: rfisError } = await supabase.from("rfis").select("*");
     if (rfisError) {
       console.error("Error fetching RFIs:", rfisError.message);
       return;
     }
-
-    // Organize RFIs by project ID
+  
+    // Organize RFIs by project ID with correct state structure
     const rfisByProject = {};
     rfisData.forEach((rfi) => {
       if (!rfisByProject[rfi.project_id]) {
-        rfisByProject[rfi.project_id] = [];
+        rfisByProject[rfi.project_id] = { rfisList: [] };
       }
-      rfisByProject[rfi.project_id].push(rfi);
+      rfisByProject[rfi.project_id].rfisList.push(rfi);
     });
-    setRfis(rfisByProject);
-
+  
+    setRfis(rfisByProject); // Update state with correctly structured RFIs
+  
     setLoading(false);
   }
+  
 
   // Function to create a new project
   const handleCreateProject = async (event) => {
