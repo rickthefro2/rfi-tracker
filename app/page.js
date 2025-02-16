@@ -12,6 +12,9 @@ export default function Home() {
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const router = useRouter();
+  const [filterStatus, setFilterStatus] = useState("All"); // Default: Show all RFIs
+  const [sortOrder, setSortOrder] = useState("Newest"); // Default: Newest first
+
 
   // Check if user is authenticated
   useEffect(() => {
@@ -191,8 +194,25 @@ export default function Home() {
             />
             <button type="submit">Create Project</button>
           </form>
-
+          <div>
+  
           <h2>Your Projects</h2>
+          <label>Filter by Status:</label>
+  <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+    <option value="All">All</option>
+    <option value="New">New</option>
+    <option value="Working on it">Working on it</option>
+    <option value="Stuck">Stuck</option>
+    <option value="Completed">Completed</option>
+  </select>
+
+  <label>Sort by:</label>
+  <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+    <option value="Newest">Newest First</option>
+    <option value="Oldest">Oldest First</option>
+  </select>
+</div>
+
           {projects.length > 0 ? (
             projects.map((project) => (
               <div key={project.id}>
@@ -236,7 +256,15 @@ export default function Home() {
                 <h4>RFIs</h4>
                 {rfis[project.id]?.rfisList && rfis[project.id].rfisList.length > 0 ? (
                   <ul>
-                    {rfis[project.id].rfisList.map((rfi) => (
+                    {rfis[project.id]?.rfisList
+  .filter((rfi) => filterStatus === "All" || rfi.status === filterStatus)
+  .sort((a, b) =>
+    sortOrder === "Newest"
+      ? new Date(b.created_at) - new Date(a.created_at)
+      : new Date(a.created_at) - new Date(b.created_at)
+  )
+  .map((rfi) => (
+
                       <li key={rfi.id}>
                         <strong>{rfi.title}</strong>: {rfi.description} | Status:{" "}
                         <select
