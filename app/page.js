@@ -14,6 +14,8 @@ export default function Home() {
   const router = useRouter();
   const [filterStatus, setFilterStatus] = useState("All"); // Default: Show all RFIs
   const [sortOrder, setSortOrder] = useState("Newest"); // Default: Newest first
+  const [searchQuery, setSearchQuery] = useState("");
+
 
 
   // Check if user is authenticated
@@ -197,6 +199,18 @@ export default function Home() {
           <div>
   
           <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+
+          <div style={{ marginBottom: "15px" }}>
+  <label style={{ fontWeight: "bold", marginRight: "10px" }}>Search RFIs:</label>
+  <input
+    type="text"
+    placeholder="Search by title or description..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    style={{ padding: "8px", width: "250px", borderRadius: "5px", border: "1px solid #ccc" }}
+  />
+</div>
+
   <div>
     <label style={{ fontWeight: "bold" }}>Filter by Status:</label>
     <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ marginLeft: "10px", padding: "5px" }}>
@@ -253,10 +267,19 @@ export default function Home() {
       <h4 style={{ marginTop: "15px", fontWeight: "bold" }}>RFIs</h4>
       {rfis[project.id]?.rfisList && rfis[project.id].rfisList.length > 0 ? (
         <ul style={{ listStyle: "none", paddingLeft: "0" }}>
-          {rfis[project.id].rfisList
-            .filter((rfi) => filterStatus === "All" || rfi.status === filterStatus)
-            .sort((a, b) => (sortOrder === "Newest" ? new Date(b.created_at) - new Date(a.created_at) : new Date(a.created_at) - new Date(b.created_at)))
-            .map((rfi) => (
+          {rfis[project.id]?.rfisList
+  .filter((rfi) => filterStatus === "All" || rfi.status === filterStatus)
+  .filter((rfi) =>
+    rfi.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    rfi.description.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  .sort((a, b) =>
+    sortOrder === "Newest"
+      ? new Date(b.created_at) - new Date(a.created_at)
+      : new Date(a.created_at) - new Date(b.created_at)
+  )
+  .map((rfi) => (
+
               <li key={rfi.id} style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px", marginBottom: "5px" }}>
                 <strong>{rfi.title}</strong>: {rfi.description} | Status:{" "}
                 <select value={rfi.status} onChange={(e) => handleUpdateRFIStatus(rfi.id, e.target.value)} style={{ marginLeft: "10px", padding: "5px" }}>
