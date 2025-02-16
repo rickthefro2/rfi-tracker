@@ -134,6 +134,51 @@ export default function Home() {
     }));
   };
 
+  // Function to delete an RFI with confirmation
+const handleDeleteRFI = async (rfiId, projectId) => {
+  const confirmDelete = window.confirm("Are you sure you want to delete this RFI?");
+  if (!confirmDelete) return;
+
+  const { error } = await supabase.from("rfis").delete().eq("id", rfiId);
+  if (error) {
+    console.error("Error deleting RFI:", error.message);
+    return;
+  }
+
+  // Remove RFI from state
+  setRfis((prevRfis) => {
+    const updatedRfis = { ...prevRfis };
+    updatedRfis[projectId].rfisList = updatedRfis[projectId].rfisList.filter((rfi) => rfi.id !== rfiId);
+    return updatedRfis;
+  });
+};
+
+// Function to delete a project with confirmation
+const handleDeleteProject = async (projectId) => {
+  const confirmDelete = window.confirm("Deleting this project will remove all RFIs. Are you sure?");
+  if (!confirmDelete) return;
+
+  // First, delete RFIs related to this project
+  await supabase.from("rfis").delete().eq("project_id", projectId);
+
+  // Then, delete the project
+  const { error } = await supabase.from("projects").delete().eq("id", projectId);
+  if (error) {
+    console.error("Error deleting project:", error.message);
+    return;
+  }
+
+  // Remove project from state
+  setProjects((prevProjects) => prevProjects.filter((project) => project.id !== projectId));
+  setRfis((prevRfis) => {
+    const updatedRfis = { ...prevRfis };
+    delete updatedRfis[projectId];
+    return updatedRfis;
+  });
+};
+
+
+
   // Function to update an RFI's status
   const handleUpdateRFIStatus = async (rfiId, newStatus) => {
     const { error } = await supabase.from("rfis").update({ status: newStatus }).eq("id", rfiId);
@@ -236,8 +281,12 @@ export default function Home() {
 {projects.length > 0 ? (
   projects.map((project) => (
     <div key={project.id} style={{ border: "1px solid #ddd", padding: "15px", borderRadius: "8px", marginBottom: "20px" }}>
-      <h3 style={{ color: "#333" }}>{project.name}</h3>
-      <p>{project.description}</p>
+      <button onClick={() => handleDeleteProject(project.id)} style={{ backgroundColor: "red", color: "white", padding: "5px", borderRadius: "5px", cursor: "pointer", marginBottom: "10px" }}>
+  🗑️ Delete Project
+</button>
+<h3 style={{ color: "#333" }}>{project.name}</h3>
+<p>{project.description}</p>
+
 
       <h4 style={{ marginTop: "10px", fontWeight: "bold" }}>Add an RFI</h4>
       <form onSubmit={(e) => handleCreateRFI(e, project.id)} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -288,6 +337,20 @@ export default function Home() {
                   <option value="Stuck">Stuck</option>
                   <option value="Completed">Completed</option>
                 </select>
+
+                <li key={rfi.id} style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px", marginBottom: "5px" }}>
+  <strong>{rfi.title}</strong>: {rfi.description} | Status:{" "}
+  <select value={rfi.status} onChange={(e) => handleUpdateRFIStatus(rfi.id, e.target.value)} style={{ marginLeft: "10px", padding: "5px" }}>
+    <option value="New">New</option>
+    <option value="Working on it">Working on it</option>
+    <option value="Stuck">Stuck</option>
+    <option value="Completed">Completed</option>
+  </select>
+  <button onClick={() => handleDeleteRFI(rfi.id, project.id)} style={{ marginLeft: "10px", backgroundColor: "red", color: "white", padding: "5px", borderRadius: "5px", cursor: "pointer" }}>
+    ❌ Delete
+  </button>
+</li>
+
               </li>
             ))}
         </ul>
