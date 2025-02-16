@@ -7,10 +7,10 @@ import supabase, { getUser } from "../lib/supabaseClient";
 export default function Home() {
   const [user, setUser] = useState(null);
   const [projects, setProjects] = useState([]);
+  const [rfis, setRfis] = useState({});
   const [loading, setLoading] = useState(true);
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
-  const [rfis, setRfis] = useState({});
   const router = useRouter();
 
   // Check if user is authenticated
@@ -27,14 +27,32 @@ export default function Home() {
     fetchUser();
   }, []);
 
-  // Fetch projects from Supabase
+  // Fetch projects and their RFIs
   async function fetchProjects() {
-    const { data, error } = await supabase.from("projects").select("*");
-    if (error) {
-      console.error("Error fetching projects:", error.message);
-    } else {
-      setProjects(data);
+    const { data: projectsData, error: projectsError } = await supabase.from("projects").select("*");
+    if (projectsError) {
+      console.error("Error fetching projects:", projectsError.message);
+      return;
     }
+    setProjects(projectsData);
+
+    // Fetch RFIs for each project
+    const { data: rfisData, error: rfisError } = await supabase.from("rfis").select("*");
+    if (rfisError) {
+      console.error("Error fetching RFIs:", rfisError.message);
+      return;
+    }
+
+    // Organize RFIs by project ID
+    const rfisByProject = {};
+    rfisData.forEach((rfi) => {
+      if (!rfisByProject[rfi.project_id]) {
+        rfisByProject[rfi.project_id] = [];
+      }
+      rfisByProject[rfi.project_id].push(rfi);
+    });
+    setRfis(rfisByProject);
+
     setLoading(false);
   }
 
@@ -68,31 +86,69 @@ export default function Home() {
     event.preventDefault();
     const title = rfis[projectId]?.title || "";
     const description = rfis[projectId]?.description || "";
-
+  
     if (!title) return;
-
+  
     if (!user || !user.id) {
       console.error("Error: No authenticated user found.");
       return;
     }
-
+  
+    // Insert the new RFI into Supabase
     const { data, error } = await supabase
       .from("rfis")
-      .insert([{ title, description, project_id: projectId, created_by: user.id }])
+      .insert([{ title, description, project_id: projectId, created_by: user.id, status: "New" }])
       .select("*");
-
+  
     if (error) {
       console.error("Error creating RFI:", error.message);
       return;
     }
-
+  
     console.log("RFI created:", data);
-
+  
+    // Ensure prevRfis[projectId] is properly structured
+    setRfis((prevRfis) => {
+      const updatedProjectRfis = prevRfis[projectId] && Array.isArray(prevRfis[projectId]) 
+        ? [...prevRfis[projectId], data[0]] 
+        : [data[0]];
+  
+      return {
+        ...prevRfis,
+        [projectId]: updatedProjectRfis,
+      };
+    });
+  
     // Clear input fields
     setRfis((prevRfis) => ({
       ...prevRfis,
       [projectId]: { title: "", description: "" },
     }));
+  };
+  
+  
+
+  // Function to update an RFI's status
+  const handleUpdateRFIStatus = async (rfiId, newStatus) => {
+    const { error } = await supabase.from("rfis").update({ status: newStatus }).eq("id", rfiId);
+
+    if (error) {
+      console.error("Error updating RFI status:", error.message);
+      return;
+    }
+
+    console.log("RFI status updated:", newStatus);
+
+    // Update the state to reflect the new status
+    setRfis((prevRfis) => {
+      const updatedRfis = { ...prevRfis };
+      Object.keys(updatedRfis).forEach((projectId) => {
+        updatedRfis[projectId] = updatedRfis[projectId].map((rfi) =>
+          rfi.id === rfiId ? { ...rfi, status: newStatus } : rfi
+        );
+      });
+      return updatedRfis;
+    });
   };
 
   // Logout function
@@ -164,6 +220,28 @@ export default function Home() {
                   />
                   <button type="submit">Submit RFI</button>
                 </form>
+
+                <h4>RFIs</h4>
+                {rfis[project.id]?.length > 0 ? (
+                  <ul>
+                    {rfis[project.id].map((rfi) => (
+                      <li key={rfi.id}>
+                        <strong>{rfi.title}</strong>: {rfi.description} | Status:{" "}
+                        <select
+                          value={rfi.status}
+                          onChange={(e) => handleUpdateRFIStatus(rfi.id, e.target.value)}
+                        >
+                          <option value="New">New</option>
+                          <option value="Working on it">Working on it</option>
+                          <option value="Stuck">Stuck</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No RFIs yet for this project.</p>
+                )}
               </div>
             ))
           ) : (
