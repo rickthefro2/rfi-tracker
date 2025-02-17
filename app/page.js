@@ -245,16 +245,17 @@ const handleDeleteProject = async (projectId) => {
   
           <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
 
-          <div style={{ marginBottom: "15px" }}>
-  <label style={{ fontWeight: "bold", marginRight: "10px" }}>Search RFIs:</label>
-  <input
-    type="text"
-    placeholder="Search by title or description..."
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    style={{ padding: "8px", width: "250px", borderRadius: "5px", border: "1px solid #ccc" }}
-  />
-</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
+  <div>
+    <label style={{ fontWeight: "bold" }}>Search RFIs:</label>
+    <input
+      type="text"
+      placeholder="Search by title or description..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      style={{ padding: "8px", width: "250px", borderRadius: "5px", border: "1px solid #ccc", marginLeft: "10px" }}
+    />
+  </div>
 
   <div>
     <label style={{ fontWeight: "bold" }}>Filter by Status:</label>
@@ -277,16 +278,18 @@ const handleDeleteProject = async (projectId) => {
 </div>
 
 
-<h2 style={{ marginBottom: "10px", fontWeight: "bold" }}>Your Projects</h2>
+<h2 style={{ marginBottom: "15px", fontWeight: "bold", textAlign: "center" }}>Your Projects</h2>
 {projects.length > 0 ? (
   projects.map((project) => (
-    <div key={project.id} style={{ border: "1px solid #ddd", padding: "15px", borderRadius: "8px", marginBottom: "20px" }}>
-      <button onClick={() => handleDeleteProject(project.id)} style={{ backgroundColor: "red", color: "white", padding: "5px", borderRadius: "5px", cursor: "pointer", marginBottom: "10px" }}>
-  🗑️ Delete Project
-</button>
-<h3 style={{ color: "#333" }}>{project.name}</h3>
-<p>{project.description}</p>
-
+    <div key={project.id} style={{ border: "1px solid #ddd", padding: "15px", borderRadius: "8px", marginBottom: "20px", backgroundColor: "#f9f9f9" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ color: "#333", marginBottom: "5px" }}>{project.name}</h3>
+        <button onClick={() => handleDeleteProject(project.id)} style={{ backgroundColor: "red", color: "white", padding: "5px", borderRadius: "5px", cursor: "pointer" }}>
+          🗑️ Delete Project
+        </button>
+      </div>
+      <p>{project.description}</p>
+      
 
       <h4 style={{ marginTop: "10px", fontWeight: "bold" }}>Add an RFI</h4>
       <form onSubmit={(e) => handleCreateRFI(e, project.id)} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -297,7 +300,7 @@ const handleDeleteProject = async (projectId) => {
               [project.id]: { ...(prevRfis[project.id] || { rfisList: [] }), title: e.target.value },
             }))
           }
-          required style={{ padding: "8px", borderRadius: "5px" }} 
+          required style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} 
         />
         <input type="text" placeholder="RFI Description" value={rfis[project.id]?.description || ""} 
           onChange={(e) =>
@@ -306,7 +309,7 @@ const handleDeleteProject = async (projectId) => {
               [project.id]: { ...(prevRfis[project.id] || { rfisList: [] }), description: e.target.value },
             }))
           }
-          style={{ padding: "8px", borderRadius: "5px" }} 
+          style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }} 
         />
         <button type="submit" style={{ backgroundColor: "#28a745", color: "white", padding: "10px", borderRadius: "5px", cursor: "pointer" }}>
           Submit RFI
@@ -316,20 +319,11 @@ const handleDeleteProject = async (projectId) => {
       <h4 style={{ marginTop: "15px", fontWeight: "bold" }}>RFIs</h4>
       {rfis[project.id]?.rfisList && rfis[project.id].rfisList.length > 0 ? (
         <ul style={{ listStyle: "none", paddingLeft: "0" }}>
-          {rfis[project.id]?.rfisList
-  .filter((rfi) => filterStatus === "All" || rfi.status === filterStatus)
-  .filter((rfi) =>
-    rfi.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    rfi.description.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-  .sort((a, b) =>
-    sortOrder === "Newest"
-      ? new Date(b.created_at) - new Date(a.created_at)
-      : new Date(a.created_at) - new Date(b.created_at)
-  )
-  .map((rfi) => (
-
-              <li key={rfi.id} style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px", marginBottom: "5px" }}>
+          {rfis[project.id].rfisList
+            .filter((rfi) => filterStatus === "All" || rfi.status === filterStatus)
+            .sort((a, b) => (sortOrder === "Newest" ? new Date(b.created_at) - new Date(a.created_at) : new Date(a.created_at) - new Date(b.created_at)))
+            .map((rfi) => (
+              <li key={rfi.id} style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px", marginBottom: "5px", backgroundColor: "#fff" }}>
                 <strong>{rfi.title}</strong>: {rfi.description} | Status:{" "}
                 <select value={rfi.status} onChange={(e) => handleUpdateRFIStatus(rfi.id, e.target.value)} style={{ marginLeft: "10px", padding: "5px" }}>
                   <option value="New">New</option>
@@ -337,20 +331,9 @@ const handleDeleteProject = async (projectId) => {
                   <option value="Stuck">Stuck</option>
                   <option value="Completed">Completed</option>
                 </select>
-
-                <li key={rfi.id} style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px", marginBottom: "5px" }}>
-  <strong>{rfi.title}</strong>: {rfi.description} | Status:{" "}
-  <select value={rfi.status} onChange={(e) => handleUpdateRFIStatus(rfi.id, e.target.value)} style={{ marginLeft: "10px", padding: "5px" }}>
-    <option value="New">New</option>
-    <option value="Working on it">Working on it</option>
-    <option value="Stuck">Stuck</option>
-    <option value="Completed">Completed</option>
-  </select>
-  <button onClick={() => handleDeleteRFI(rfi.id, project.id)} style={{ marginLeft: "10px", backgroundColor: "red", color: "white", padding: "5px", borderRadius: "5px", cursor: "pointer" }}>
-    ❌ Delete
-  </button>
-</li>
-
+                <button onClick={() => handleDeleteRFI(rfi.id, project.id)} style={{ marginLeft: "10px", backgroundColor: "red", color: "white", padding: "5px", borderRadius: "5px", cursor: "pointer" }}>
+                  ❌ Delete
+                </button>
               </li>
             ))}
         </ul>
@@ -360,14 +343,19 @@ const handleDeleteProject = async (projectId) => {
     </div>
   ))
 ) : (
-  <p>No projects found.</p>
+  <p style={{ textAlign: "center", color: "gray" }}>No projects found.</p>
 )}
 
+
           </div>
+        </div>
+
         </>
-      ) : (
-        <p>Redirecting to login...</p>
-      )}
-    </main>
+) : (
+  <p>Redirecting to login...</p>
+)}
+</main>
+
   );
 }
+
